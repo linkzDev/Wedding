@@ -1,2 +1,2 @@
 # Wedding
-https://linkzdev.github.io/wedding/?to=tamu
+https://linkzdev.github.io/Wedding/?to=tamu
