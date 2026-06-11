@@ -1897,5 +1897,21 @@
   });
 </script>
 <script src="https://cdn.tailwindcss.com"></script>
+	   <script>
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. Mengambil parameter 'to' dari URL
+    const params = new URLSearchParams(window.location.search);
+    const guestName = params.get("to");
+
+    // 2. Jika nama ditemukan di URL, ganti teks di HTML
+    if (guestName) {
+        const target = document.getElementById("guest-target");
+        if (target) {
+            // Gunakan decodeURIComponent agar spasi dan simbol terbaca benar
+            target.innerText = decodeURIComponent(guestName);
+        }
+    }
+});
+</script>
    </body>
 </html>
