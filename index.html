@@ -1822,17 +1822,30 @@
       <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a06d53fe993b45dc',t:'MTc4MDY0MzExNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
-<script>
-// Koneksi ke Broker
-const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+<script type="module">
+  // 1. Import library dari CDN Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-client.on("connect", () => {
-    console.log("Terhubung ke MQTT Broker");
-    client.subscribe("undangan/rivaldi-cika/rsvp");
-});
+  // 2. Konfigurasi Anda (Copy dari yang Anda berikan tadi)
+  const firebaseConfig = {
+    apiKey: "AIzaSyARgS1MuaDiZetW_Ob2umYYaETywZ0H2lk",
+    authDomain: "wedding-815fa.firebaseapp.com",
+    databaseURL: "https://wedding-815fa-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "wedding-815fa",
+    storageBucket: "wedding-815fa.firebasestorage.app",
+    messagingSenderId: "550276011455",
+    appId: "1:550276011455:web:26c669a3258df42d21bd0a",
+    measurementId: "G-J7B7Q4962Z"
+  };
 
-// Fungsi pengiriman (dipanggil oleh tombol)
-window.sendRSVP = function() {
+  // 3. Inisialisasi
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const wishesRef = ref(db, 'wishes');
+
+  // 4. Fungsi Kirim (Ganti fungsi sendRSVP lama Anda dengan ini)
+  window.sendRSVP = function() {
     const name = document.getElementById("author").value;
     const wish = document.getElementById("saic-textarea-6854").value;
     const attendance = document.getElementById("attendance").value;
@@ -1842,70 +1855,46 @@ window.sendRSVP = function() {
         return;
     }
 
-    const payload = JSON.stringify({
+    push(wishesRef, {
         nama: name,
         ucapan: wish,
         kehadiran: attendance,
         timestamp: new Date().toISOString()
+    }).then(() => {
+        alert("Terima kasih, ucapan Anda telah terkirim!");
+        document.getElementById("commentform-6854").reset();
     });
+  };
 
-    // Kirim data
-    client.publish("undangan/rivaldi-cika/rsvp", payload, { qos: 1, retain: true });
+  // 5. Fungsi Ambil Data (Ganti client.on("message") lama dengan ini)
+  onChildAdded(wishesRef, (snapshot) => {
+    const data = snapshot.val();
+    const list = document.getElementById("wishes-list");
     
-    // Feedback ke user
-    alert("Terima kasih, ucapan Anda telah terkirim!");
+    // Pastikan elemen wishes-list ada
+    if (!list) return;
+
+    const item = document.createElement("div");
+    item.className = "p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex gap-4 animate-in mb-4";
     
-    // Reset form setelah kirim
-    document.getElementById("commentform-6854").reset();
-};
-client.on("message", (topic, message) => {
-    try {
-        const data = JSON.parse(message.toString());
-        const list = document.getElementById("wishes-list");
+    const statusBadge = data.kehadiran === 'present' 
+        ? '<span class="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-2">Hadir</span>' 
+        : '<span class="text-[9px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full ml-2">Tidak Hadir</span>';
 
-        // Membuat elemen HTML baru
-        const item = document.createElement("div");
-        item.className = "p-4 bg-white rounded-2xl shadow-sm border border-slate-100 flex gap-4 animate-in mb-4";
-        
-        // Menentukan warna badge status
-        const statusBadge = data.kehadiran === 'present' 
-            ? '<span class="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-2">Hadir</span>' 
-            : '<span class="text-[9px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full ml-2">Tidak Hadir</span>';
-
-        item.innerHTML = `
-            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold shrink-0 text-sm uppercase">
-                ${data.nama.charAt(0)}
+    item.innerHTML = `
+        <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold shrink-0 text-sm uppercase">
+            ${data.nama ? data.nama.charAt(0) : '?'}
+        </div>
+        <div class="flex-1">
+            <div class="flex items-center mb-1">
+                <p class="font-bold text-xs text-slate-800">${data.nama}</p>
+                ${statusBadge}
             </div>
-            <div class="flex-1">
-                <div class="flex items-center mb-1">
-                    <p class="font-bold text-xs text-slate-800">${data.nama}</p>
-                    ${statusBadge}
-                </div>
-                <p class="text-[11px] text-slate-600 italic leading-relaxed">"${data.ucapan}"</p>
-            </div>`;
-        
-        // Memasukkan ucapan baru ke paling atas
-        list.prepend(item);
-    } catch (e) {
-        console.error("Gagal memproses pesan MQTT:", e);
-    }
-});
-</script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    // 1. Mengambil parameter 'to' dari URL
-    const params = new URLSearchParams(window.location.search);
-    const guestName = params.get("to");
-
-    // 2. Jika nama ditemukan di URL, ganti teks di HTML
-    if (guestName) {
-        const target = document.getElementById("guest-target");
-        if (target) {
-            // Gunakan decodeURIComponent agar spasi dan simbol terbaca benar
-            target.innerText = decodeURIComponent(guestName);
-        }
-    }
-});
+            <p class="text-[11px] text-slate-600 italic leading-relaxed">"${data.ucapan}"</p>
+        </div>`;
+    
+    list.prepend(item);
+  });
 </script>
 <script src="https://cdn.tailwindcss.com"></script>
    </body>
